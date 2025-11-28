@@ -102,46 +102,52 @@ def check_attendance_logic(w_in_str, w_out_str, l_start_str, l_end_str):
     return duty_minutes, total_missing, all_missing_details
 
 # ==========================================
-# 2. 網頁介面區 (Streamlit 語法)
+# 2. 網頁介面區 (已修改：清空預設值)
 # ==========================================
 
 # 設定網頁標題
 st.set_page_config(page_title="考勤小工具", page_icon="🕒")
 st.title("🕒 考勤異常檢查器")
-st.write("輸入打卡與請假時間，自動計算異常時數與區間。")
+st.write("請輸入打卡時間，系統將自動計算是否有異常。")
 
 # 建立兩欄式排版
 col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("🏢 上班打卡")
-    in_work_start = st.text_input("上班時間", value="09:15", placeholder="HH:MM")
-    in_work_end = st.text_input("下班時間", value="15:15", placeholder="HH:MM")
+    # value="" 代表預設是空的
+    # placeholder 只有在格子是空的時候才會顯示灰色提示字
+    in_work_start = st.text_input("上班時間", value="", placeholder="例如 09:00")
+    in_work_end = st.text_input("下班時間", value="", placeholder="例如 18:00")
 
 with col2:
     st.subheader("📝 請假資訊")
-    in_leave_start = st.text_input("請假開始", value="15:30", placeholder="HH:MM")
-    in_leave_end = st.text_input("請假結束", value="18:30", placeholder="HH:MM")
+    in_leave_start = st.text_input("請假開始", value="", placeholder="若無請假免填")
+    in_leave_end = st.text_input("請假結束", value="", placeholder="若無請假免填")
 
 # 按鈕與結果
 if st.button("🚀 開始檢查", type="primary"):
-    duty, missing, details = check_attendance_logic(
-        in_work_start, in_work_end, in_leave_start, in_leave_end
-    )
-    
-    st.divider() # 分隔線
-    
-    if isinstance(duty, str):
-        st.warning(duty)
+    # 這裡加一個防呆：如果使用者什麼都沒填就按按鈕
+    if not in_work_start and not in_work_end and not in_leave_start and not in_leave_end:
+        st.warning("⚠️ 請至少輸入一組時間喔！")
     else:
-        # 使用指標顯示大數字
-        st.metric(label="有效工時 (分鐘)", value=f"{duty:.1f}")
+        duty, missing, details = check_attendance_logic(
+            in_work_start, in_work_end, in_leave_start, in_leave_end
+        )
         
-        if duty >= 480:
-            st.success("✅ 狀態：正常 (無異常)")
+        st.divider() # 分隔線
+        
+        if isinstance(duty, str):
+            st.warning(duty)
         else:
-            st.error(f"❌ 狀態：異常！少 {missing:.1f} 分鐘 (未滿 8 小時)")
+            st.metric(label="有效工時 (分鐘)", value=f"{duty:.1f}")
             
-            st.markdown("### 🔍 偵測到以下缺勤區間：")
-            for detail in details:
-                st.write(f"🔴 **{detail}**")
+            if duty >= 480:
+                st.success("✅ 狀態：正常 (無異常)")
+            else:
+                st.error(f"❌ 狀態：異常！少 {missing:.1f} 分鐘 (未滿 8 小時)")
+                
+                if details:
+                    st.markdown("### 🔍 偵測到以下缺勤區間：")
+                    for detail in details:
+                        st.write(f"🔴 **{detail}**")
