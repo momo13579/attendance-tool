@@ -2,7 +2,7 @@ import streamlit as st
 from datetime import datetime, timedelta
 
 # ==========================================
-# 1. 核心邏輯區 (跟 Colab 版完全一樣)
+# 1. 核心邏輯區 (修改版：增加 09:30 封頂限制)
 # ==========================================
 
 def parse_time(time_str):
@@ -45,6 +45,9 @@ def check_attendance_logic(w_in_str, w_out_str, l_start_str, l_end_str):
     LUNCH_END = datetime.combine(base_date, datetime.strptime("13:00", "%H:%M").time())
     FLEX_START = datetime.combine(base_date, datetime.strptime("08:30", "%H:%M").time())
     
+    # 🔥🔥🔥 新增規則：彈性時間最晚只能到 09:30
+    FLEX_LATEST = datetime.combine(base_date, datetime.strptime("09:30", "%H:%M").time())
+    
     w_in = parse_time(w_in_str)
     w_out = parse_time(w_out_str)
     l_start = parse_time(l_start_str)
@@ -56,13 +59,20 @@ def check_attendance_logic(w_in_str, w_out_str, l_start_str, l_end_str):
     if not has_work and not has_leave:
         return "⚠️ 請輸入時間", 0, []
 
+    # 決定起算時間 (Start Time)
     starts = []
     if has_work: starts.append(max(w_in, FLEX_START))
     if has_leave: starts.append(max(l_start, FLEX_START))
-    start_time = min(starts) 
+    
+    start_time = min(starts)
+    
+    # 🔥🔥🔥 關鍵修改：如果起算時間晚於 09:30，強制拉回 09:30
+    # 這樣如果 09:31 打卡，系統就會認定你是從 09:30 開始算，產生 1 分鐘缺口
+    start_time = min(start_time, FLEX_LATEST)
     
     end_time = start_time + timedelta(hours=9) 
     
+    # 整理所有「在勤/請假」區間
     segments = []
     if has_work: segments.append((w_in, w_out))
     if has_leave: segments.append((l_start, l_end))
