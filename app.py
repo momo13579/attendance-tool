@@ -107,7 +107,7 @@ def check_attendance_logic(w_in_str, w_out_str, l_start_str, l_end_str):
 
 # 設定網頁標題
 st.set_page_config(page_title="考勤小工具", page_icon="🕒")
-st.title("🕒 考勤異常檢查器")
+st.title("🕒 出勤時間檢查器")
 st.write("請輸入打卡時間，系統將自動計算是否有異常。")
 
 # 建立兩欄式排版
