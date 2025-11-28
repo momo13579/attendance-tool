@@ -168,8 +168,7 @@ st.markdown("---")
 # [連結文字](網址) 是 Markdown 的標準寫法
 st.markdown("""
     #### 💡 貼心提醒
-    計算結果僅供參考，**請按公司請假規則進行請假**。
-    若無法檢視，請輸入公司帳號密碼即可查看。
+    計算結果僅供參考，**請上UOF進行確認，並按公司請假規則進行請假**。
     
-    👉 [點擊這裡查看公司請假規章] (https://imo.hamastar.com.tw/FNews/Detail/140/?SN=5825&SystemModuleParameterSN=0) 
+    👉 [點擊這裡查看公司請假規章 (內網連結)](https://imo.hamastar.com.tw/FNews/Detail/140/?SN=5825&SystemModuleParameterSN=0) 
 """)
