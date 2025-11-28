@@ -170,5 +170,5 @@ st.markdown("""
     #### 💡 貼心提醒
     計算結果僅供參考，**請按公司請假規則進行請假**。
     
-    👉 [點擊這裡查看公司請假規章 (內網連結)](https://www.google.com) 
+    👉 [點擊這裡查看公司請假規章 (內網連結)](https://imo.hamastar.com.tw/FNews/Detail/140/?SN=5825&SystemModuleParameterSN=0) 
 """)
