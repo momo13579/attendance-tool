@@ -161,3 +161,14 @@ if st.button("🚀 開始檢查", type="primary"):
                     st.markdown("### 🔍 偵測到以下缺勤區間：")
                     for detail in details:
                         st.write(f"🔴 **{detail}**")
+# 畫一條分隔線，讓版面好看一點
+st.markdown("---") 
+
+# 顯示提醒文字與連結
+# [連結文字](網址) 是 Markdown 的標準寫法
+st.markdown("""
+    #### 💡 貼心提醒
+    計算結果僅供參考，**請按公司請假規則進行請假**。
+    
+    👉 [點擊這裡查看公司請假規章 (內網連結)](https://www.google.com) 
+""")
