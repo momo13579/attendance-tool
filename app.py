@@ -168,7 +168,7 @@ if st.button("🚀 開始檢查", type="primary"):
         st.divider()
         
         # 顯示判定模式，讓使用者知道規則有沒有生效
-        st.info(f"📋 判定規則：{mode}")
+        # st.info(f"📋 判定規則：{mode}")
 
         if isinstance(duty, str):
             st.warning(duty)
