@@ -19,7 +19,9 @@ def parse_time(time_str):
 
 def analyze_gap(g_start, g_end, lunch_start, lunch_end):
     """
-    計算缺勤時間，並自動扣除午休時間 (午休時間不算缺勤)
+    計算缺勤時間。
+    邏輯：只計算「標準工作時間內」的缺口。
+    12:00~13:00 為午休時間，這段時間的缺口不計入缺勤，但這段時間的工作也不計入工時（因為自動扣除）。
     """
     if g_end <= g_start:
         return 0, []
@@ -65,15 +67,15 @@ def check_attendance_logic(w_in_str, w_out_str, l_start_str, l_end_str):
     has_leave = (l_start is not None and l_end is not None and l_end > l_start)
     
     if not has_work and not has_leave:
-        return "⚠️ 請輸入時間", 0, [], "未知"
+        return "⚠️ 請輸入時間", 0, [], "等待輸入..."
 
     # 2. 🔥 關鍵判定：決定「最晚起算時間」與「模式」
     # 如果有請假，強制回歸 09:00 標準；否則享有 09:30 彈性
     if has_leave:
-        mode = "嚴格模式 (有請假，標準 09:00 起算)"
+        mode = "🔴 嚴格模式 (有請假，標準 09:00 起算)"
         FLEX_LATEST = STANDARD_START # 09:00
     else:
-        mode = "彈性模式 (無請假，可彈性至 09:30)"
+        mode = "🟢 彈性模式 (無請假，可彈性至 09:30)"
         FLEX_LATEST = datetime.combine(base_date, datetime.strptime("09:30", "%H:%M").time())
 
     # 3. 計算「應上班時間 (Start Time)」
@@ -82,6 +84,9 @@ def check_attendance_logic(w_in_str, w_out_str, l_start_str, l_end_str):
     if has_leave: starts.append(max(l_start, FLEX_START))
     
     # 預設起算時間 (取最早的活動時間)
+    if not starts:
+        return "⚠️ 時間輸入有誤", 0, [], mode
+
     raw_start_time = min(starts)
     
     # 套用封頂規則：
@@ -99,7 +104,7 @@ def check_attendance_logic(w_in_str, w_out_str, l_start_str, l_end_str):
     
     merged = []
     for s in segments:
-        # 只取在「應上班區間」內的有效部分
+        # 只取在「應上班區間」內的有效部分，超出 09:00-18:00 (或彈性區間) 的部分不計入補償
         actual_s = max(s[0], start_time)
         actual_e = min(s[1], end_time)
         
@@ -119,6 +124,7 @@ def check_attendance_logic(w_in_str, w_out_str, l_start_str, l_end_str):
     total_missing = 0
     all_missing_details = []
     
+    # 檢查每一個合併後的區間
     for seg_s, seg_e in merged:
         # 如果當前檢查點 < 區間開始點，代表中間有缺口
         if current < seg_s:
@@ -141,8 +147,8 @@ def check_attendance_logic(w_in_str, w_out_str, l_start_str, l_end_str):
 # 2. 網頁介面區
 # ==========================================
 
-st.set_page_config(page_title="考勤小工具", page_icon="🕒")
-st.title("🕒 出勤時間檢查器")
+st.set_page_config(page_title="考勤小工具 v3.0", page_icon="🕒")
+st.title("🕒 出勤時間檢查器 v3.0")
 st.write("請輸入打卡時間，系統將自動計算是否有異常。")
 
 col1, col2 = st.columns(2)
@@ -167,20 +173,27 @@ if st.button("🚀 開始檢查", type="primary"):
         
         st.divider()
         
-        # 顯示判定模式，讓使用者知道規則有沒有生效
-        st.info(f"📋 判定規則：{mode}")
+        # 顯示判定模式，讓使用者確認目前是「嚴格」還是「彈性」
+        if "嚴格" in mode:
+            st.error(f"📋 判定規則：{mode}")
+        else:
+            st.success(f"📋 判定規則：{mode}")
 
         if isinstance(duty, str):
             st.warning(duty)
         else:
-            st.metric(label="有效工時 (分鐘)", value=f"{duty:.1f}")
+            col_res1, col_res2 = st.columns(2)
+            with col_res1:
+                st.metric(label="有效工時", value=f"{duty:.1f} 分鐘")
+            with col_res2:
+                st.metric(label="缺勤時數", value=f"{missing:.1f} 分鐘")
             
             # 判斷結果
             # 浮點數比對可能有微小誤差，用 > 479.9 視為 480
             if duty >= 479.9:
                 st.success("✅ 狀態：正常 (無異常)")
             else:
-                st.error(f"❌ 狀態：異常！少 {missing:.1f} 分鐘 (未滿 8 小時)")
+                st.error(f"❌ 狀態：異常！ (未滿 8 小時)")
                 
                 if details:
                     st.markdown("### 🔍 偵測到以下缺勤區間：")
@@ -190,6 +203,9 @@ if st.button("🚀 開始檢查", type="primary"):
 st.markdown("---") 
 st.markdown("""
     #### 💡 貼心提醒
-    計算結果僅供參考，**請上UOF進行確認，並按公司請假規則請假**。<br>
+    本系統計算結果僅供參考。
+    - **嚴格模式**：若當天有請假，上班時間強制從 09:00 開始計算。
+    - **午休規則**：若有請假，午休強制固定為 12:00-13:00 (不計入工時)。
+    
     👉 [點擊這裡查看公司請假規章](https://imo.hamastar.com.tw/FNews/Detail/140/?SN=5825&SystemModuleParameterSN=0) 
 """)
