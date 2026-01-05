@@ -44,17 +44,22 @@ def check_attendance_logic(w_in_str, w_out_str, l_start_str, l_end_str):
     LUNCH_START = datetime.combine(base_date, datetime.strptime("12:00", "%H:%M").time())
     LUNCH_END = datetime.combine(base_date, datetime.strptime("13:00", "%H:%M").time())
     FLEX_START = datetime.combine(base_date, datetime.strptime("08:30", "%H:%M").time())
-    
-    # 🔥🔥🔥 新增規則：彈性時間最晚只能到 09:30
-    FLEX_LATEST = datetime.combine(base_date, datetime.strptime("09:30", "%H:%M").time())
-    
+
+    # 先解析時間，因為我們需要知道「有沒有請假」才能決定標準
     w_in = parse_time(w_in_str)
     w_out = parse_time(w_out_str)
     l_start = parse_time(l_start_str)
     l_end = parse_time(l_end_str)
-    
+
     has_work = (w_in is not None and w_out is not None and w_out > w_in)
     has_leave = (l_start is not None and l_end is not None and l_end > l_start)
+
+    # 🔥🔥🔥 關鍵修改在這裡：動態決定最晚起算時間
+    # 規則：如果當天有請假 (has_leave 為真)，強制標準為 09:00；否則維持彈性到 09:30
+    if has_leave:
+        FLEX_LATEST = datetime.combine(base_date, datetime.strptime("09:00", "%H:%M").time())
+    else:
+        FLEX_LATEST = datetime.combine(base_date, datetime.strptime("09:30", "%H:%M").time())
     
     if not has_work and not has_leave:
         return "⚠️ 請輸入時間", 0, []
