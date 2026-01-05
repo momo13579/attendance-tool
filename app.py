@@ -44,40 +44,43 @@ def check_attendance_logic(w_in_str, w_out_str, l_start_str, l_end_str):
     LUNCH_START = datetime.combine(base_date, datetime.strptime("12:00", "%H:%M").time())
     LUNCH_END = datetime.combine(base_date, datetime.strptime("13:00", "%H:%M").time())
     FLEX_START = datetime.combine(base_date, datetime.strptime("08:30", "%H:%M").time())
-
-    # 先解析時間，因為我們需要知道「有沒有請假」才能決定標準
+    
+    # 1. 先解析輸入的時間 (必須先做這一步！)
     w_in = parse_time(w_in_str)
     w_out = parse_time(w_out_str)
     l_start = parse_time(l_start_str)
     l_end = parse_time(l_end_str)
-
+    
+    # 2. 計算是否有刷卡、是否有請假 (有了這個，下面的 if 判斷才有效)
     has_work = (w_in is not None and w_out is not None and w_out > w_in)
     has_leave = (l_start is not None and l_end is not None and l_end > l_start)
-
-    # 🔥🔥🔥 關鍵修改在這裡：動態決定最晚起算時間
-    # 規則：如果當天有請假 (has_leave 為真)，強制標準為 09:00；否則維持彈性到 09:30
-    if has_leave:
-        FLEX_LATEST = datetime.combine(base_date, datetime.strptime("09:00", "%H:%M").time())
-    else:
-        FLEX_LATEST = datetime.combine(base_date, datetime.strptime("09:30", "%H:%M").time())
     
     if not has_work and not has_leave:
         return "⚠️ 請輸入時間", 0, []
 
-    # 決定起算時間 (Start Time)
+    # 3. 🔥🔥🔥 關鍵修改：動態決定最晚起算時間
+    # 這段程式碼必須放在 has_leave 計算出來之後！
+    if has_leave:
+        # 有請假 -> 嚴格模式，超過 09:00 就算遲到
+        FLEX_LATEST = datetime.combine(base_date, datetime.strptime("09:00", "%H:%M").time())
+    else:
+        # 沒請假 -> 彈性模式，可以彈性到 09:30
+        FLEX_LATEST = datetime.combine(base_date, datetime.strptime("09:30", "%H:%M").time())
+
+    # 4. 決定起算時間 (Start Time)
     starts = []
     if has_work: starts.append(max(w_in, FLEX_START))
     if has_leave: starts.append(max(l_start, FLEX_START))
     
-    start_time = min(starts)
+    start_time = min(starts) 
     
-    # 🔥🔥🔥 關鍵修改：如果起算時間晚於 09:30，強制拉回 09:30
-    # 這樣如果 09:31 打卡，系統就會認定你是從 09:30 開始算，產生 1 分鐘缺口
+    # 5. 套用封頂規則 (如果起算時間晚於 FLEX_LATEST，強制拉回)
     start_time = min(start_time, FLEX_LATEST)
     
+    # 6. 計算下班時間 (Start Time + 9小時)
     end_time = start_time + timedelta(hours=9) 
     
-    # 整理所有「在勤/請假」區間
+    # 7. 整理所有「在勤/請假」區間
     segments = []
     if has_work: segments.append((w_in, w_out))
     if has_leave: segments.append((l_start, l_end))
