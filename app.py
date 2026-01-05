@@ -46,7 +46,7 @@ def check_attendance_logic(w_in_str, w_out_str, l_start_str, l_end_str):
     FLEX_START = datetime.combine(base_date, datetime.strptime("08:30", "%H:%M").time())
     
     # 🔥🔥🔥 新增規則：彈性時間最晚只能到 09:30
-    FLEX_LATEST = datetime.combine(base_date, datetime.strptime("09:00", "%H:%M").time())
+    FLEX_LATEST = datetime.combine(base_date, datetime.strptime("09:30", "%H:%M").time())
     
     w_in = parse_time(w_in_str)
     w_out = parse_time(w_out_str)
